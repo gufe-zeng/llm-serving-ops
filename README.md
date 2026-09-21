@@ -25,6 +25,8 @@ flowchart LR
     P --> G[Grafana :3000]
 ```
 
+![Final architecture](docs/diagrams/06_final_architecture.png)
+
 ## Why this project
 
 这个项目不是训练模型，而是学习“模型训练完成之后，如何把它稳定地跑成服务”。重点包括：
@@ -79,9 +81,13 @@ llm-serving-ops/
 │   ├── ARCHITECTURE.md
 │   ├── TROUBLESHOOTING.md
 │   ├── INTERVIEW.md
-│   └── RESUME.md
+│   ├── RESUME.md
+│   ├── LEARNING_CHECKLIST.md
+│   └── diagrams/
+├── LLM-Serving-Ops-学习手册.docx
 └── results/
-    └── README.md
+    ├── README.md
+    └── baseline_seq1/
 ```
 
 ## Quick start
@@ -190,6 +196,19 @@ Headless 示例：
 locust -f loadtest\locustfile.py --host http://127.0.0.1:8000 --headless -u 4 -r 4 -t 3m --csv results\c4
 ```
 
+## Baseline load-test snapshot
+
+固定输出 128 tokens、`--max-num-seqs 1` 的学习型基线结果如下。该表用于理解排队与延迟关系，不作为参数优化结论。
+
+| Concurrency | Requests | Failures | RPS | Avg E2E | P95 E2E |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 27 | 0 | 0.153 | 6.56 s | 7.5 s |
+| 2 | 27 | 0 | 0.157 | 12.53 s | 13 s |
+| 4 | 28 | 0 | 0.159 | 23.79 s | 26 s |
+| 8 | 28 | 0 | 0.162 | 43.07 s | 50 s |
+
+原始 Locust CSV 保存在 `results/baseline_seq1/`。可以看到并发增加后吞吐变化有限，而排队和端到端延迟明显上升，这与 Grafana 中的 Waiting Requests、Queue Time 和 TTFT 变化一致。
+
 ## Known-good vLLM settings for the verified 4GB GPU
 
 ```text
@@ -226,6 +245,8 @@ docker compose up -d
 - `docs/TROUBLESHOOTING.md`: 故障排查手册。
 - `docs/INTERVIEW.md`: 面试高频问题与回答框架。
 - `docs/RESUME.md`: 简历项目描述与自我介绍。
+- `docs/LEARNING_CHECKLIST.md`: 学习复盘与面试前检查清单。
+- `docs/diagrams/`: 架构演进、可观测性、压测和排障图。
 - `LLM-Serving-Ops-学习手册.docx`: 从零到一完整学习手册。
 
 ## Scope
