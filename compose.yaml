@@ -1,0 +1,74 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    ports:
+      - "8000:8000"
+    ipc: host
+    gpus: all
+    environment:
+      VLLM_USE_V2_MODEL_RUNNER: "0"
+    volumes:
+      - type: bind
+        source: E:/LLM/Models
+        target: /root/.cache/huggingface
+    command:
+      - Qwen/Qwen3-0.6B
+      - --dtype
+      - half
+      - --max-model-len
+      - "1024"
+      - --max-num-seqs
+      - "1"
+      - --gpu-memory-utilization
+      - "0.75"
+      - --enforce-eager
+
+  api:
+    build:
+      context: ./api
+    ports:
+      - "8080:8080"
+    environment:
+      VLLM_BASE_URL: http://vllm:8000
+      MODEL_NAME: Qwen/Qwen3-0.6B
+    depends_on:
+      - vllm
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+    volumes:
+      - type: bind
+        source: ./nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+    depends_on:
+      - api
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - type: bind
+        source: ./prometheus/prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+      - prometheus-data:/prometheus
+    depends_on:
+      - vllm
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus-data:
+  grafana-storage:
+    external: true
